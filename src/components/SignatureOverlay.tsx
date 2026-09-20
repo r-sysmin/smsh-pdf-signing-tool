@@ -19,8 +19,21 @@ const SignatureOverlay = ({
 }: SignatureOverlayProps) => {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
-  const [signatureSize, setSignatureSize] = useState({ width: 128, height: 64 });
+  const [signatureSize, setSignatureSize] = useState({ width: 180, height: 90 });
   const [isResizing, setIsResizing] = useState(false);
+
+  // Size the signature to its real aspect ratio once the image loads
+  React.useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth > 0) {
+        const aspect = img.naturalHeight / img.naturalWidth;
+        setSignatureSize({ width: 180, height: Math.max(24, Math.round(180 * aspect)) });
+      }
+    };
+    img.src = signature;
+  }, [signature]);
+
   // Auto-scroll helpers
   const rafRef = React.useRef<number | null>(null);
   const lastTsRef = React.useRef<number | null>(null);

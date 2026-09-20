@@ -16,18 +16,6 @@ const SignatureCanvas = ({ onSignatureCreated }: SignatureCanvasProps) => {
   
   const maxHistorySize = 10;
 
-  // Check if canvas is empty
-  const isCanvasEmpty = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return true;
-    
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return true;
-    
-    const pixelData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    return !pixelData.some(channel => channel !== 0);
-  };
-
   // Save canvas state to history before starting a new drawing stroke
   const saveCanvasState = () => {
     const canvas = canvasRef.current;

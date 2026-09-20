@@ -39,6 +39,8 @@ const SignatureOverlay = ({
   const lastTsRef = React.useRef<number | null>(null);
   const mouseYRef = React.useRef<number>(0);
   const scrollDirRef = React.useRef<number>(0);
+  // Ref for react-draggable (avoids findDOMNode and satisfies its types)
+  const nodeRef = React.useRef<HTMLDivElement>(null);
 
   const handleDrag = (e: any, data: { x: number; y: number }) => {
     if (isResizing) return; // Don't move while resizing
@@ -162,13 +164,14 @@ const SignatureOverlay = ({
       
       {/* Draggable signature with buttons */}
       <Draggable
+        nodeRef={nodeRef}
         bounds="parent"
         position={position}
         onDrag={handleDrag}
         onStart={handleDragStart}
         onStop={handleDragStop}
       >
-        <div className="absolute pointer-events-auto">
+        <div className="absolute pointer-events-auto" ref={nodeRef}>
           <div className="relative cursor-move">
             <img 
               src={signature} 

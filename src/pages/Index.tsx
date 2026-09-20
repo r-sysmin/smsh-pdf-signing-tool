@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { LucidePenLine, LucideDownload, LucideUserCheck } from 'lucide-react';
 
+// Positions and sizes are stored in PDF points (1pt = 1px at viewer scale 1)
+// so the downloaded PDF matches the on-screen preview at any zoom level.
 interface PlacedSignature {
   x: number;
   y: number;
@@ -104,26 +106,21 @@ const Index = () => {
 
   const handleDownloadSignedPdf = async () => {
     if (!pdfFile || placedSignatures.length === 0) return;
-    
+
     try {
       const existingPdfBytes = await pdfFile.arrayBuffer();
       const pdfDoc = await PDFDocument.load(existingPdfBytes);
       const pages = pdfDoc.getPages();
-      
+
       for (const placedSig of placedSignatures) {
         const page = pages[placedSig.pageNumber - 1];
+        if (!page) continue;
         const signatureImage = await pdfDoc.embedPng(placedSig.signature);
-        
-        // Use custom size or default size
-        const sigWidth = placedSig.width || 128;
-        const sigHeight = placedSig.height || 64;
-        
-        // Scale the signature for PDF (adjust scale factor as needed)
-        const scaleFactor = 0.5;
-        const { width, height } = signatureImage.scale(scaleFactor);
-        const finalWidth = (sigWidth / 128) * width;  // Adjust relative to default
-        const finalHeight = (sigHeight / 64) * height; // Adjust relative to default
-        
+
+        // Coordinates are already in PDF points, matching the preview
+        const finalWidth = placedSig.width || 128;
+        const finalHeight = placedSig.height || 64;
+
         page.drawImage(signatureImage, {
           x: placedSig.x,
           y: page.getHeight() - placedSig.y - finalHeight,
@@ -131,14 +128,16 @@ const Index = () => {
           height: finalHeight
         });
       }
-      
+
       const pdfBytes = await pdfDoc.save();
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
+      const baseName = pdfFile.name.replace(/\.pdf$/i, '') || 'document';
       link.href = url;
-      link.download = 'signed-document.pdf';
+      link.download = `${baseName}-signed.pdf`;
       link.click();
+      URL.revokeObjectURL(url);
       toast.success('PDF signed and downloaded');
     } catch (error) {
       console.error('Error signing PDF:', error);

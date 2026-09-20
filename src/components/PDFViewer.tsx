@@ -46,7 +46,8 @@ const PDFViewer = ({ file, signature, onSignaturePlace, placedSignatures }: PDFV
 
     const overlayElement = viewerContentRef.current;
     if (!overlayElement) {
-      onSignaturePlace(pageNumber, x, y, width, height);
+      const pxToPt = (v: number) => v / scale;
+      onSignaturePlace(pageNumber, pxToPt(x), pxToPt(y), pxToPt(SIG_W), pxToPt(SIG_H));
       setShowOverlay(false);
       return;
     }
@@ -96,10 +97,20 @@ const PDFViewer = ({ file, signature, onSignaturePlace, placedSignatures }: PDFV
       const clampedX = Math.max(0, Math.min(xInPage, pageRect.width - SIG_W));
       const clampedY = Math.max(0, Math.min(yInPage, pageRect.height - SIG_H));
 
-      onSignaturePlace(targetIndex + 1, clampedX, clampedY, width, height);
+      // Store positions in PDF points (1pt = 1px at scale 1) so the saved PDF
+      // matches the preview regardless of the current zoom level.
+      const pxToPt = (v: number) => v / scale;
+      onSignaturePlace(
+        targetIndex + 1,
+        pxToPt(clampedX),
+        pxToPt(clampedY),
+        pxToPt(SIG_W),
+        pxToPt(SIG_H)
+      );
     } else {
       // Fallback
-      onSignaturePlace(pageNumber, x, y, width, height);
+      const pxToPt = (v: number) => v / scale;
+      onSignaturePlace(pageNumber, pxToPt(x), pxToPt(y), pxToPt(SIG_W), pxToPt(SIG_H));
     }
 
     setShowOverlay(false);
@@ -169,7 +180,7 @@ const PDFViewer = ({ file, signature, onSignaturePlace, placedSignatures }: PDFV
                 renderTextLayer={false}
               />
               
-              {/* Render placed signatures for this page */}
+              {/* Render placed signatures for this page (positions stored in PDF points) */}
               {placedSignatures
                 .filter(sig => sig.pageNumber === index + 1)
                 .map((placedSig, sigIndex) => (
@@ -177,16 +188,16 @@ const PDFViewer = ({ file, signature, onSignaturePlace, placedSignatures }: PDFV
                     key={`placed-sig-${index + 1}-${sigIndex}`}
                     className="absolute pointer-events-none z-10"
                     style={{
-                      left: `${placedSig.x}px`,
-                      top: `${placedSig.y}px`,
+                      left: `${placedSig.x * scale}px`,
+                      top: `${placedSig.y * scale}px`,
                     }}
                   >
                     <img
                       src={placedSig.signature}
                       alt="Placed signature"
                       style={{
-                        width: placedSig.width || 128,
-                        height: placedSig.height || 64
+                        width: (placedSig.width || 128) * scale,
+                        height: (placedSig.height || 64) * scale
                       }}
                       className="object-contain"
                     />

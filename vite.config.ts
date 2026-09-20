@@ -19,4 +19,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // react-draggable references process.env in the browser; define it to avoid crashes
+  define: {
+    "process.env": {},
+  },
 }));

@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 
+// react-draggable's type definitions are incompatible with React 19's types;
+// the component itself works fine at runtime, so loosen its props type here.
+const DraggableCompat = Draggable as unknown as React.FC<any>;
+
 interface SignatureOverlayProps {
   signature: string;
   onPlaceSignature: (x: number, y: number, pageNumber: number, width?: number, height?: number) => void;
@@ -19,13 +23,28 @@ const SignatureOverlay = ({
 }: SignatureOverlayProps) => {
   const [position, setPosition] = useState({ x: 100, y: 100 });
   const [isDragging, setIsDragging] = useState(false);
-  const [signatureSize, setSignatureSize] = useState({ width: 128, height: 64 });
+  const [signatureSize, setSignatureSize] = useState({ width: 180, height: 90 });
   const [isResizing, setIsResizing] = useState(false);
+
+  // Size the signature to its real aspect ratio once the image loads
+  React.useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.naturalWidth > 0) {
+        const aspect = img.naturalHeight / img.naturalWidth;
+        setSignatureSize({ width: 180, height: Math.max(24, Math.round(180 * aspect)) });
+      }
+    };
+    img.src = signature;
+  }, [signature]);
+
   // Auto-scroll helpers
   const rafRef = React.useRef<number | null>(null);
   const lastTsRef = React.useRef<number | null>(null);
   const mouseYRef = React.useRef<number>(0);
   const scrollDirRef = React.useRef<number>(0);
+  // Ref for react-draggable (avoids findDOMNode and satisfies its types)
+  const nodeRef = React.useRef<HTMLDivElement>(null);
 
   const handleDrag = (e: any, data: { x: number; y: number }) => {
     if (isResizing) return; // Don't move while resizing
@@ -148,14 +167,15 @@ const SignatureOverlay = ({
       <div className="absolute inset-0 bg-black/20 pointer-events-auto" />
       
       {/* Draggable signature with buttons */}
-      <Draggable
+      <DraggableCompat
+        nodeRef={nodeRef}
         bounds="parent"
         position={position}
         onDrag={handleDrag}
         onStart={handleDragStart}
         onStop={handleDragStop}
       >
-        <div className="absolute pointer-events-auto">
+        <div className="absolute pointer-events-auto" ref={nodeRef}>
           <div className="relative cursor-move">
             <img 
               src={signature} 
@@ -192,7 +212,8 @@ const SignatureOverlay = ({
             </Button>
           </div>
         </div>
-      </Draggable>
+        </DraggableCompat>
+
 
       {/* Instructions */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-auto">

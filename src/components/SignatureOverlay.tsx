@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import Draggable from 'react-draggable';
 import { Button } from '@/components/ui/button';
 
+// react-draggable's type definitions are incompatible with React 19's types;
+// the component itself works fine at runtime, so loosen its props type here.
+const DraggableCompat = Draggable as unknown as React.FC<any>;
+
 interface SignatureOverlayProps {
   signature: string;
   onPlaceSignature: (x: number, y: number, pageNumber: number, width?: number, height?: number) => void;
@@ -163,7 +167,7 @@ const SignatureOverlay = ({
       <div className="absolute inset-0 bg-black/20 pointer-events-auto" />
       
       {/* Draggable signature with buttons */}
-      <Draggable
+      <DraggableCompat
         nodeRef={nodeRef}
         bounds="parent"
         position={position}
